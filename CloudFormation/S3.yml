@@ -1,0 +1,30 @@
+Parameters:
+  BucketName: 
+    Type: String
+    Default: dhruvcloudformationbucket
+
+Resources:
+  S3bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref BucketName
+      VersioningConfiguration:
+        Status: Enabled
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true 
+        RestrictPublicBuckets: true 
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+
+Outputs:
+  BucketNameOutput: 
+    Description: The name of the created S3 Bucket is
+    Value: !Ref S3bucket
+
+  BucketArnOutput:
+    Description: The ARN of the created S3 bucket is 
+    Value: !GetAtt S3bucket.Arn

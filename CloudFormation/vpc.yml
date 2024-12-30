@@ -1,0 +1,153 @@
+Parameters:
+  paramVpcCidr:
+    Description: Enter VPC CIDR 
+    Type: String
+    Default: 10.0.0.0/16
+  paramPrivatesub1:
+    Type: String
+    Default: 10.0.1.0/24
+  paramPrivatesub2: 
+    Type: String
+    Default: 10.0.2.0/24
+  paramPublicsub1:
+    Type: String
+    Default: 10.0.3.0/24
+  paramPublicsub2:
+    Type: String
+    Default: 10.0.4.0/24
+
+Resources:
+  dhruvvpc:
+    Type: AWS::EC2::VPC
+    Properties: 
+      CidrBlock: !Ref paramVpcCidr
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+      - Key: Name
+        Value: dhruvvpc
+  
+  IGW:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+      - Key: Name 
+        Value: dhruvIGW
+
+  IGWattachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+         VpcId: !Ref dhruvvpc 
+         InternetGatewayId: !Ref IGW
+
+  PublicRT:
+    Type: AWS::EC2::RouteTable
+    Properties:
+         VpcId: !Ref dhruvvpc
+         Tags:
+         - Key: Name
+           Value: PublicRT
+
+  PublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn: IGWattachment
+    Properties:
+         RouteTableId: !Ref PublicRT
+         DestinationCidrBlock: 0.0.0.0/0
+         GatewayId: !Ref IGW
+
+  PublicSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref dhruvvpc
+      AvailabilityZone: !Select [ 0, !GetAZs '' ]
+      CidrBlock: !Ref paramPublicsub1
+      MapPublicIpOnLaunch: true
+      Tags:
+      - Key: Name
+        Value: PublicSubnet1
+
+  PublicSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref dhruvvpc
+      AvailabilityZone: !Select [ 0, !GetAZs '' ]
+      CidrBlock: !Ref paramPublicsub2
+      MapPublicIpOnLaunch: true
+      Tags:
+      - Key: Name
+        Value: PublicSubnet2
+
+  PublicSubnetAssociation1:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+         RouteTableId: !Ref PublicRT
+         SubnetId: !Ref PublicSubnet1
+
+  PublicSubnetAssociation2:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+         RouteTableId: !Ref PublicRT
+         SubnetId: !Ref PublicSubnet2
+  
+  PrivateRT:
+    Type: AWS::EC2::RouteTable
+    Properties:
+         VpcId: !Ref dhruvvpc
+         Tags:
+         - Key: Name
+           Value: PrivateRT
+
+  EIPNatGate:
+    Type: AWS::EC2::EIP
+    DependsOn: IGWattachment
+    Properties:
+      Domain: vpc
+
+  NatGateway:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt EIPNatGate.AllocationId
+      SubnetId: !Ref PublicSubnet1
+  
+  PrivateRoute:
+    Type: AWS::EC2::Route
+    DependsOn: IGWattachment
+    Properties:
+         RouteTableId: !Ref PrivateRT
+         DestinationCidrBlock: 0.0.0.0/0
+         GatewayId: !Ref NatGateway
+
+  PrivateSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref dhruvvpc
+      AvailabilityZone: !Select [ 0, !GetAZs '' ]
+      CidrBlock: !Ref paramPrivatesub1
+      MapPublicIpOnLaunch: false
+      Tags:
+      - Key: Name
+        Value: PrivateSubnet1
+
+  PrivateSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref dhruvvpc
+      AvailabilityZone: !Select [ 0, !GetAZs '' ]
+      CidrBlock: !Ref paramPrivatesub2
+      MapPublicIpOnLaunch: false
+      Tags:
+      - Key: Name
+        Value: PrivateSubnet2
+
+  PrviateSubnetAssociation1:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+         RouteTableId: !Ref PrivateRT
+         SubnetId: !Ref PrivateSubnet1
+
+  PrivateSubnetAssociation2:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+         RouteTableId: !Ref PrivateRT
+         SubnetId: !Ref PrivateSubnet2
